@@ -10,7 +10,7 @@
 
 - Windows 10/11, Python 3.10+
 - `bin/screp.exe` — 리플레이 파서 [icza/screp](https://github.com/icza/screp) v1.13.8 (Apache-2.0, `bin/screp-LICENSE.txt`)
-  - 저장소에는 포함하지 않는다. [릴리스](https://github.com/icza/screp/releases)에서 받거나 `go build ./cmd/screp`로 빌드해 `bin/`에 둔다.
+  - 원본 소스를 수정 없이 windows/amd64로 빌드해 저장소에 포함했다. `git clone`/`git pull`만 하면 된다.
 
 ## 사용법
 

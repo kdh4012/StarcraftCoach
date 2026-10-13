@@ -3,4 +3,3 @@ __pycache__/
 config.json
 data/
 reports/
-bin/*.exe
