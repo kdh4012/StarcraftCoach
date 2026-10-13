@@ -33,6 +33,13 @@ def _make_game_report(cfg: Config, db: Database, game_id: int, open_it: bool) ->
     return path
 
 
+def _check_screp(cfg: Config) -> bool:
+    if Path(cfg.screp_path).is_file():
+        return True
+    log.error("screp 실행 파일이 없습니다: %s (zip의 bin\\screp.exe를 복사하세요)", Path(cfg.screp_path).resolve())
+    return False
+
+
 def cmd_init(cfg: Config, _: argparse.Namespace) -> int:
     if CONFIG_PATH.exists():
         log.info("이미 존재: %s", CONFIG_PATH.resolve())
@@ -47,8 +54,14 @@ def cmd_import(cfg: Config, args: argparse.Namespace) -> int:
     if not folder.is_dir():
         log.error("폴더 없음: %s", folder)
         return 1
+    if not _check_screp(cfg):
+        return 1
     db = Database(cfg.db_path)
     try:
+        # v0.1.0 버그: screp 누락 시 리플레이가 실패로 기록됨 → 해당 기록은 항상 재시도
+        cleared = db.clear_failed(None if args.retry_failed else "screp 실행 파일")
+        if cleared:
+            log.info("실패 기록 %d건 재시도", cleared)
         ids = import_folder(db, cfg.screp_path, folder)
         log.info("신규 %d판 저장 (빅헌터 누적 %d판)", len(ids), len(db.games(cfg.map_keywords)))
     finally:
@@ -60,6 +73,8 @@ def cmd_watch(cfg: Config, _: argparse.Namespace) -> int:
     folder = Path(cfg.replay_dir)
     if not folder.is_dir():
         log.error("폴더 없음: %s (config.json의 replay_dir 확인)", folder)
+        return 1
+    if not _check_screp(cfg):
         return 1
     db = Database(cfg.db_path)
     try:
@@ -120,6 +135,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("init", help="config.json 생성")
     p = sub.add_parser("import", help="리플레이 폴더 일괄 가져오기")
     p.add_argument("folder", nargs="?", help="기본값: config의 replay_dir")
+    p.add_argument("--retry-failed", action="store_true", help="실패 기록된 리플레이 전부 재시도")
     sub.add_parser("watch", help="리플레이 폴더 감시 → 경기 종료 시 자동 리포트")
     p = sub.add_parser("report", help="경기 리포트 생성")
     p.add_argument("--game", type=int, help="경기 번호 (기본: 가장 최근)")

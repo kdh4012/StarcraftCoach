@@ -111,6 +111,18 @@ class Database:
                   json.dumps(p.metrics)) for p in g.players])
         return game_id
 
+    def failed_count(self) -> int:
+        return self.conn.execute("SELECT COUNT(*) FROM failed_files").fetchone()[0]
+
+    def clear_failed(self, error_like: str | None = None) -> int:
+        """실패 기록 삭제 → 다음 import 때 재시도. error_like 지정 시 해당 문구가 포함된 것만"""
+        with self.conn:
+            if error_like:
+                cur = self.conn.execute("DELETE FROM failed_files WHERE error LIKE ?", (f"%{error_like}%",))
+            else:
+                cur = self.conn.execute("DELETE FROM failed_files")
+        return cur.rowcount
+
     def mark_failed(self, file_hash: str, path: str, error: str) -> None:
         with self.conn:
             self.conn.execute("INSERT OR REPLACE INTO failed_files VALUES (?,?,?)", (file_hash, path, error))

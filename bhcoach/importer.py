@@ -37,6 +37,7 @@ def import_file(db: Database, screp_path: str, path: Path) -> int | None:
 def import_folder(db: Database, screp_path: str, folder: Path) -> list[int]:
     files = sorted(folder.rglob("*.rep"), key=lambda p: p.stat().st_mtime)
     log.info("%s 에서 리플레이 %d개 발견", folder, len(files))
+    failed_before = db.failed_count()
     new_ids = []
     for i, f in enumerate(files, 1):
         gid = import_file(db, screp_path, f)
@@ -44,6 +45,10 @@ def import_folder(db: Database, screp_path: str, folder: Path) -> list[int]:
             new_ids.append(gid)
         if i % 100 == 0:
             log.info("진행 %d/%d (신규 %d)", i, len(files), len(new_ids))
+
+    failed_now = db.failed_count()
+    log.info("결과: 신규 %d / 이번 실패 %d / 실패 기록 누적 %d (재시도: import --retry-failed)",
+             len(new_ids), failed_now - failed_before, failed_now)
     return new_ids
 
 

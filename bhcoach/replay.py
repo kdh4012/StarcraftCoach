@@ -12,7 +12,11 @@ from .metrics import FRAME_SEC, extract_player_metrics
 
 
 class ReplayParseError(Exception):
-    pass
+    """개별 리플레이 문제 (해당 파일만 실패 처리)"""
+
+
+class ScrepNotFoundError(Exception):
+    """screp 실행 파일 없음 (환경 문제이므로 리플레이를 실패로 기록하면 안 됨)"""
 
 
 @dataclass
@@ -57,7 +61,7 @@ def run_screp(screp_path: str, replay: Path) -> dict:
             capture_output=True, timeout=60, creationflags=flags,
         )
     except FileNotFoundError as e:
-        raise ReplayParseError(f"screp 실행 파일을 찾을 수 없습니다: {screp_path}") from e
+        raise ScrepNotFoundError(f"screp 실행 파일을 찾을 수 없습니다: {screp_path}") from e
     except subprocess.TimeoutExpired as e:
         raise ReplayParseError(f"screp 시간 초과: {replay}") from e
 
